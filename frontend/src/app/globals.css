@@ -1,0 +1,165 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-surface: #0B0F0F;
+  --color-surface-raised: #111918;
+  --color-surface-elevated: #161F1E;
+
+  --color-kratos-100: #CCFBF1;
+  --color-kratos-200: #99E6E0;
+  --color-kratos-300: #5EC0B8;
+  --color-kratos-400: #34C0B7;
+  --color-kratos-500: #1F8E86;
+  --color-kratos-600: #0D9488;
+  --color-kratos-700: #0F766E;
+  --color-kratos-800: #11524D;
+  --color-kratos-900: #0C312E;
+
+  --color-gold-300: #F0D580;
+  --color-gold-400: #E4C45A;
+  --color-gold-500: #D4AF37;
+
+  --font-sans: 'Geist', -apple-system, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', monospace;
+  --font-display: 'Geist', -apple-system, system-ui, sans-serif;
+}
+
+:root {
+  /* Kratos brand colors — extracted from kratosystems.africa */
+  --surface:          #0B0F0F;
+  --surface-raised:   #111918;
+  --surface-card:     rgba(255, 255, 255, 0.035);
+  --surface-card-hover: rgba(255, 255, 255, 0.06);
+
+  --kratos-900:       #0C312E;
+  --kratos-800:       #11524D;
+  --kratos-700:       #0F766E;
+  --kratos-600:       #0D9488;
+  --kratos-500:       #1F8E86;  /* Primary brand teal */
+  --kratos-400:       #34C0B7;
+  --kratos-300:       #5EC0B8;  /* Icon/accent teal */
+  --kratos-200:       #99E6E0;
+  --kratos-100:       #CCFBF1;
+
+  /* Gold accents — prosperity & money */
+  --gold-500:         #D4AF37;
+  --gold-400:         #E4C45A;
+  --gold-300:         #F0D580;
+  --gold-glow:        rgba(212, 175, 55, 0.15);
+
+  /* Stage colors */
+  --stage-hit-list:    #6B7280;
+  --stage-engaged:     #3B82F6;
+  --stage-discovery:   #8B5CF6;
+  --stage-proposal:    #F59E0B;
+  --stage-negotiation: #EF4444;
+  --stage-contracting: #10B981;
+  --stage-active:      #1F8E86;
+  --stage-maintenance: #6366F1;
+
+  --border-subtle:    rgba(255, 255, 255, 0.08);
+  --border-medium:    rgba(255, 255, 255, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  background-color: var(--surface);
+  color: white;
+  font-family: 'Geist', -apple-system, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dot grid background texture */
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Glassmorphism card */
+.glass-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-card:hover {
+  background: var(--surface-card-hover);
+  border-color: rgba(31, 142, 134, 0.25);
+}
+
+/* Gold shimmer for KES values */
+.kes-value {
+  color: var(--gold-500);
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pipeline stage dots */
+.stage-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* Kanban column */
+.kanban-column {
+  min-width: 260px;
+  max-width: 280px;
+  flex-shrink: 0;
+}
+
+/* Client card drag states */
+.client-card-dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+}
+
+/* Teal glow button */
+.btn-primary {
+  background: var(--kratos-500);
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-primary:hover {
+  background: var(--kratos-400);
+  transform: translateY(-1px);
+}
+
+/* Mono label style (like on the website) */
+.mono-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.4);
+}
+
+/* Teal mono accent label */
+.mono-label-teal {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--kratos-300);
+}
