@@ -9,13 +9,26 @@ export default function SignInPage() {
       <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-4 bg-dot-grid">
       <div className="w-full max-w-md flex flex-col items-center">
         {/* Kratos Logo / Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-kratos-500 to-kratos-700 flex items-center justify-center shadow-lg shadow-kratos-500/20">
-            <span className="font-bold text-xl text-white tracking-wider">K</span>
+        <div className="flex flex-col items-center text-center mb-8">
+          <div className="relative mb-3">
+            <div className="w-20 h-20 rounded-2xl bg-surface-elevated/80 border border-kratos-500/30 flex items-center justify-center p-2.5 backdrop-blur-xl shadow-2xl shadow-kratos-500/20">
+              <img
+                src="/kratos-emblem.png"
+                alt="Kratos Systems Africa"
+                className="w-full h-full object-contain filter drop-shadow-[0_0_12px_rgba(31,142,134,0.6)]"
+              />
+            </div>
+            <div className="absolute inset-0 rounded-2xl bg-kratos-500/10 blur-xl -z-10" />
           </div>
-          <div>
-            <h1 className="font-semibold text-lg text-white tracking-tight">Kratos Systems</h1>
-            <p className="text-xs text-white/50 mono-label-teal">Internal CRM</p>
+          <h1 className="font-display font-bold text-xl text-white tracking-wide uppercase">
+            Kratos Systems
+          </h1>
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-kratos-400 mt-0.5">
+            Africa • Enterprise CRM
+          </p>
+          <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[11px] text-white/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Internal Portal • Authorized Access
           </div>
         </div>
 

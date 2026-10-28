@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "sessions",
     "proposals",
     "invoices",
+    "team",
 ]
 
 MIDDLEWARE = [

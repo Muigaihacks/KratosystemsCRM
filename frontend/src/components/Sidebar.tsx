@@ -12,7 +12,7 @@ import {
   FileText,
   Receipt,
   BarChart3,
-  Zap,
+  ShieldCheck,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -25,6 +25,7 @@ const navItems = [
   { href: "/proposals", label: "Proposals", icon: FileText },
   { href: "/invoices", label: "Invoices", icon: Receipt },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/team", label: "Team & Access", icon: ShieldCheck },
 ];
 
 export default function Sidebar() {
@@ -36,17 +37,21 @@ export default function Sidebar() {
       <div className="px-5 py-5 border-b border-white/8">
         <Link href="/dashboard" className="flex items-center gap-2.5 group">
           <div className="relative">
-            <div className="w-7 h-7 rounded-lg bg-kratos-500/20 border border-kratos-500/40 flex items-center justify-center">
-              <Zap className="w-3.5 h-3.5 text-kratos-400" />
+            <div className="w-8 h-8 rounded-lg bg-kratos-500/15 border border-kratos-500/30 flex items-center justify-center p-1 overflow-hidden">
+              <img
+                src="/kratos-emblem.png"
+                alt="Kratos Systems Africa"
+                className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(31,142,134,0.4)]"
+              />
             </div>
             <div className="absolute inset-0 rounded-lg bg-kratos-500/20 blur-[6px] opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div>
             <div className="font-display text-white text-sm font-semibold tracking-wide uppercase">
-              Kratos
+              Kratos Systems
             </div>
-            <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/35">
-              CRM
+            <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-kratos-400">
+              Africa • CRM
             </div>
           </div>
         </Link>

@@ -17,4 +17,5 @@ urlpatterns = [
     path("api/sessions/", include("sessions.urls")),
     path("api/proposals/", include("proposals.urls")),
     path("api/invoices/", include("invoices.urls")),
+    path("api/team/", include("team.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
