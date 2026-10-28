@@ -17,12 +17,27 @@ class ClientContextSerializer(serializers.ModelSerializer):
 class ClientSerializer(serializers.ModelSerializer):
     days_in_stage = serializers.ReadOnlyField()
     context_entries = ClientContextSerializer(many=True, read_only=True)
+    sessions = serializers.SerializerMethodField()
+    proposals = serializers.SerializerMethodField()
+    invoices = serializers.SerializerMethodField()
     assigned_developer_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Client
         fields = "__all__"
         read_only_fields = ["id", "created_at", "updated_at", "stage_entered_at"]
+
+    def get_sessions(self, obj):
+        from sessions.views import ClientSessionSerializer
+        return ClientSessionSerializer(obj.sessions.all(), many=True).data
+
+    def get_proposals(self, obj):
+        from proposals.views import ProposalSerializer
+        return ProposalSerializer(obj.proposals.all(), many=True).data
+
+    def get_invoices(self, obj):
+        from invoices.views import InvoiceSerializer
+        return InvoiceSerializer(obj.invoices.all(), many=True).data
 
     def get_assigned_developer_name(self, obj):
         if obj.assigned_developer:
