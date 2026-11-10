@@ -1,0 +1,9 @@
+# Kratos Systems AI Context & Operating Rules
+
+When working in this repository:
+1. Always read `KRATOS_SYSTEMS_CONTEXT.md` before suggesting changes or writing code.
+2. Maintain the established stack: Next.js 16 (App Router), Tailwind CSS v4, Clerk Auth, Django 6.1 REST Framework, PostgreSQL.
+3. Design aesthetic: Dark canvas (`#0B0F0F`), Kratos primary teal (`#1F8E86`), gold KES figures (`#D4AF37`), glowing atomic emblem (`/kratos-emblem.png`).
+4. Respect role-based access control (Super Admin, BD, Developer) and the 3-attempt password reset auto-lockout security policy.
+5. All automations are powered via self-hosted n8n (Recall.ai, AssemblyAI, Claude/OpenAI, Resend).
+6. Never expose, commit, or log credentials, secrets, or `.env` files.
