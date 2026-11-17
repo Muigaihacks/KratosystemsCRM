@@ -46,16 +46,10 @@ class ProposalViewSet(viewsets.ModelViewSet):
         if not context_text.strip():
             return Response({"error": "No client context found. Add discovery session summaries first."}, status=400)
 
-        import anthropic
         from django.conf import settings
+        draft = ""
 
-        anthropic_client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        message = anthropic_client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=4096,
-            messages=[{
-                "role": "user",
-                "content": f"""You are a senior software engineering consultant at Kratos Systems Ltd, 
+        prompt_text = f"""You are a senior software engineering consultant at Kratos Systems Ltd, 
 a Nairobi-based custom software firm. Based on the client context below, 
 draft a professional software development proposal in markdown format.
 
@@ -76,10 +70,27 @@ Draft a professional proposal covering:
 8. Why Kratos Systems
 
 Keep it professional, specific to this client's actual business, and avoid generic filler."""
-            }]
-        )
 
-        draft = message.content[0].text
+        if getattr(settings, "OPENAI_API_KEY", None):
+            import openai
+            client_ai = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+            response = client_ai.chat.completions.create(
+                model="gpt-4o",
+                messages=[{"role": "user", "content": prompt_text}],
+                temperature=0.7,
+            )
+            draft = response.choices[0].message.content
+        elif getattr(settings, "ANTHROPIC_API_KEY", None):
+            import anthropic
+            anthropic_client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+            message = anthropic_client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=4096,
+                messages=[{"role": "user", "content": prompt_text}],
+            )
+            draft = message.content[0].text
+        else:
+            return Response({"error": "No AI API key (OpenAI or Anthropic) configured."}, status=500)
         from django.utils import timezone
         proposal.ai_draft_text = draft
         proposal.ai_generated_at = timezone.now()

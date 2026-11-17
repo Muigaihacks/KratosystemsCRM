@@ -131,8 +131,12 @@ CLERK_PUBLISHABLE_KEY = os.environ.get("CLERK_PUBLISHABLE_KEY", "")
 # Anthropic (Claude API)
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
+# OpenAI API
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+
 # Recall.ai
 RECALL_API_KEY = os.environ.get("RECALL_API_KEY", "")
+RECALL_REGION = os.environ.get("RECALL_REGION", "eu-central-1")
 
 # AssemblyAI
 ASSEMBLYAI_API_KEY = os.environ.get("ASSEMBLYAI_API_KEY", "")

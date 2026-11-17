@@ -1,0 +1,59 @@
+{
+  "name": "Kratos CRM — Pipeline B: Proposal & Email Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kratos-proposal-event",
+        "options": {}
+      },
+      "id": "proposal-webhook",
+      "name": "Proposal Event Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.RESEND_API_KEY }}"
+            },
+            {
+              "name": "User-Agent",
+              "value": "KratosCRM/1.0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"Kratos Systems <info@kratosystems.africa>\",\n  \"to\": [\"{{ $json.body.recipient_email }}\"],\n  \"subject\": \"Proposal: {{ $json.body.proposal_title }} — Kratos Systems Ltd\",\n  \"html\": \"<div style='font-family:sans-serif;color:#111;max-width:600px;margin:auto;'><h2 style='color:#1F8E86;'>Kratos Systems Africa</h2><p>Dear {{ $json.body.recipient_name }},</p><p>Please find attached your custom software development proposal prepared following our discovery session.</p><p><strong>Proposal Ref:</strong> {{ $json.body.proposal_number }}</p><p><a href='{{ $json.body.pdf_url }}' style='background:#1F8E86;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px;display:inline-block;margin-top:12px;'>View & Download Proposal PDF</a></p><br/><hr style='border:none;border-top:1px solid #eee;'/><p style='font-size:12px;color:#888;'>Kratos Systems Ltd • Nairobi, Kenya</p></div>\"\n}",
+        "options": {}
+      },
+      "id": "send-resend-email",
+      "name": "Send Proposal via Resend",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [400, 300]
+    }
+  ],
+  "connections": {
+    "Proposal Event Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send Proposal via Resend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

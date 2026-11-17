@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: kratos_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-kratos_crm}
+      POSTGRES_USER: ${DB_USER:-kratos_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-kratos_secret_pass_2026}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-kratos_user} -d ${DB_NAME:-kratos_crm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kratos_backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-kratos_crm}
+      DB_USER: ${DB_USER:-kratos_user}
+      DB_PASSWORD: ${DB_PASSWORD:-kratos_secret_pass_2026}
+    volumes:
+      - ./backend/media:/app/media
+      - static_volume:/app/staticfiles
+    ports:
+      - "8000:8000"
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: kratos_n8n
+    restart: always
+    environment:
+      - N8N_HOST=${N8N_HOST:-localhost}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://localhost:5678/}
+      - GENERIC_TIMEZONE=Africa/Nairobi
+      - TZ=Africa/Nairobi
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n-workflows:/home/node/workflows
+    ports:
+      - "5678:5678"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: kratos_caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - API_DOMAIN=${API_DOMAIN:-:80}
+      - N8N_DOMAIN=${N8N_DOMAIN:-:5678}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - n8n
+
+volumes:
+  postgres_data:
+  n8n_data:
+  static_volume:
+  caddy_data:
+  caddy_config:

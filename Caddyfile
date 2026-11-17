@@ -1,0 +1,19 @@
+# Caddyfile for Kratos Systems CRM & n8n
+# If custom domains are not yet mapped, Caddy will serve on IP/ports directly.
+
+# Global options
+{
+    email info@kratosystems.africa
+}
+
+# Backend API
+{$API_DOMAIN:localhost} {
+    reverse_proxy backend:8000
+}
+
+# n8n Automation Engine
+{$N8N_DOMAIN:n8n.localhost} {
+    reverse_proxy n8n:5678 {
+        flush_interval -1
+    }
+}

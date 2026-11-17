@@ -9,3 +9,4 @@ Please consult `KRATOS_SYSTEMS_CONTEXT.md` located in the root of this repositor
 - Complete architectural breakdown of Kratos Systems CRM (Next.js 16 + Django 6.1 + PostgreSQL + Clerk + n8n).
 - Team and access control policies (Super Admin, BD, Developer roles + 3-attempt password lockout).
 - Reusable session initialization prompt and update discipline.
+

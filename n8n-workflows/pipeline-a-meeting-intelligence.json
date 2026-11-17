@@ -1,0 +1,144 @@
+{
+  "name": "Kratos CRM — Pipeline A: Meeting Intelligence",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kratos-meeting-bot",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Recall.ai Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.event }}",
+              "operation": "equal",
+              "value2": "bot.status_change"
+            },
+            {
+              "value1": "={{ $json.body.data.status.code }}",
+              "operation": "equal",
+              "value2": "done"
+            }
+          ]
+        }
+      },
+      "id": "filter-done",
+      "name": "Filter Status Done",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [320, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://eu-central-1.recall.ai/api/v1/bot/{{ $json.body.data.bot_id }}/transcript/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Token {{ $env.RECALL_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-transcript",
+      "name": "Fetch Recall Transcript",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [540, 200]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are Kratos Systems' executive intelligence assistant. Summarize the following client meeting transcript into a structured markdown report covering: 1. Executive Summary, 2. Key Client Pain Points, 3. Agreed Decisions, 4. Action Items (Owner & Deadline), 5. Technical & Commercial Scope notes."
+            },
+            {
+              "role": "user",
+              "content": "Transcript:\n{{ JSON.stringify($json) }}"
+            }
+          ]
+        }
+      },
+      "id": "openai-summary",
+      "name": "OpenAI GPT-4o Summarizer",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [780, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/clients/context/",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"client\": \"{{ $('Recall.ai Webhook Trigger').item.json.body.data.custom_metadata.client_id }}\",\n  \"context_type\": \"meeting_summary\",\n  \"summary_text\": {{ JSON.stringify($json.message.content) }},\n  \"tags\": [\"discovery\", \"meeting-intelligence\"]\n}",
+        "options": {}
+      },
+      "id": "push-to-crm",
+      "name": "Post to Kratos CRM Context Feed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1020, 200]
+    }
+  ],
+  "connections": {
+    "Recall.ai Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter Status Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Status Done": {
+      "main": [
+        [
+          {
+            "node": "Fetch Recall Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Recall Transcript": {
+      "main": [
+        [
+          {
+            "node": "OpenAI GPT-4o Summarizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4o Summarizer": {
+      "main": [
+        [
+          {
+            "node": "Post to Kratos CRM Context Feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

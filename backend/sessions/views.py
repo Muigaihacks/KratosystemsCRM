@@ -46,8 +46,9 @@ class ClientSessionViewSet(viewsets.ModelViewSet):
             "bot_name": f"Kratos Notes — {session.session_name}",
             "recording_config": {"transcript": {"provider": {"meeting_captions": {}}}},
         }
+        region = getattr(settings, "RECALL_REGION", "eu-central-1")
         resp = requests.post(
-            "https://us-west-2.recall.ai/api/v1/bot/",
+            f"https://{region}.recall.ai/api/v1/bot/",
             json=payload,
             headers={
                 "Authorization": f"Token {settings.RECALL_API_KEY}",
