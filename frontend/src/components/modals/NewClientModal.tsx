@@ -10,11 +10,15 @@ const INDUSTRIES = [
 ];
 
 export default function NewClientModal({
+  isOpen,
   onClose,
   onCreated,
+  onSuccess,
 }: {
+  isOpen?: boolean;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated?: () => void;
+  onSuccess?: () => void;
 }) {
   const [form, setForm] = useState({
     company_name: "", industry: "other", contact_name: "",
@@ -32,7 +36,9 @@ export default function NewClientModal({
     setError("");
     try {
       await axios.post(`${API}/api/clients/`, form);
-      onCreated();
+      if (onCreated) onCreated();
+      if (onSuccess) onSuccess();
+      onClose();
     } catch (err: any) {
       setError(err.response?.data?.detail || "Failed to create client");
     } finally {
