@@ -49,27 +49,73 @@ class ProposalViewSet(viewsets.ModelViewSet):
         from django.conf import settings
         draft = ""
 
-        prompt_text = f"""You are a senior software engineering consultant at Kratos Systems Ltd, 
-a Nairobi-based custom software firm. Based on the client context below, 
-draft a professional software development proposal in markdown format.
+        prompt_text = f"""You are the senior legal and technical contract architect at Kratos Systems Ltd.
+Based on the client details and discovery context below, draft a formal, legally grounded 
+"SOFTWARE DEVELOPMENT & IMPLEMENTATION AGREEMENT" in clean markdown format following Kratos Systems' official 14-page contract template.
 
-Client: {client.company_name} ({client.get_industry_display()})
-Contact: {client.contact_name} ({client.contact_role})
+CLIENT DETAILS:
+- Company / Legal Entity: {client.company_name} ({client.get_industry_display()})
+- Contact Person: {client.contact_name} ({client.contact_role})
+- Contact Email: {client.contact_email}
 
-Client Context & Discovery Notes:
+DISCOVERY CONTEXT & NOTES:
 {context_text}
 
-Draft a professional proposal covering:
-1. Executive Summary
-2. Understanding of the Problem
-3. Our Proposed Solution
-4. Scope of Work (modules/features)
-5. Technical Architecture Overview
-6. Project Timeline (phased)
-7. Commercial Terms (leave [PRICING TBD] as placeholder — Tyrese will fill this)
-8. Why Kratos Systems
+STRUCTURE TO GENERATE (Follow strictly):
+# KRATOS SYSTEMS | SOFTWARE DEVELOPMENT & IMPLEMENTATION
+## SOFTWARE DEVELOPMENT & IMPLEMENTATION AGREEMENT
+### {client.company_name} Operations & Digital Platform
 
-Keep it professional, specific to this client's actual business, and avoid generic filler."""
+**SERVICE PROVIDER:** Tyrese Muigai trading as Kratos Systems, a sole proprietorship of WAMU APARTMENTS JUJA, Business Name Registration No. BN-2OSJW6VA, KRA PIN A018866725K
+**CLIENT:** [FULL REGISTERED LEGAL NAME OF {client.company_name.upper()}]
+**AGREEMENT DATE:** [INSERT DATE]
+**PROJECT FEE:** KShs [ESTIMATED OR INSERT AMOUNT] (Subject to Schedule B tax election)
+
+---
+### RECITALS & BACKGROUND
+Provide background recitals (A, B, C) detailing the client's operational context, problem statement, and appointment of Kratos Systems.
+
+### CORE OPERATIVE CLAUSES
+Include the standard 18 formal clauses:
+1. DEFINITIONS AND INTERPRETATION (Acceptance Criteria, Business Day, Deliverables, Third-Party Services)
+2. APPOINTMENT AND TERM (Commencement upon receipt of Tranche 1)
+3. SCOPE OF SERVICES AND CHANGE CONTROL (Formal Change Request mechanism)
+4. PROJECT PLAN AND DELIVERY (Phased rollout with milestones)
+5. CLIENT RESPONSIBILITIES AND DEPENDENCIES (M-Pesa Paybill/B2C, GCP/AWS access, operational readiness)
+6. FEES, INVOICING AND PAYMENT (Two-tranche structure: Tranche 1 upon execution, Tranche 2 upon UAT; 14-day grace period, 2% interest on overdue amounts, NCBA Bank Kenya payment terms)
+7. DELIVERY, TESTING AND ACCEPTANCE (7 business days UAT, deemed acceptance provisions)
+8. DEPLOYMENT, THIRD-PARTY COSTS AND SERVICE AVAILABILITY (Client directly funds cloud/SMS/APIs)
+9. TRAINING, WARRANTY AND SUPPORT (90-day defect warranty, first 3 calendar months post-delivery support included at no additional fee)
+10. INTELLECTUAL PROPERTY AND HANDOVER (Client owns Client Data; perpetual internal license; source-code handover upon full payment)
+11. CONFIDENTIALITY AND DATA PROTECTION (Kenyan Data Protection Act 2019 / ODPC controller-processor allocation)
+12. SECURITY AND OPERATIONAL LIMITATIONS (RBAC, HTTPS, encrypted secrets, automated daily cloud database backups)
+13. WARRANTIES, DISCLAIMERS AND LIABILITY (Liability capped at total contract fee; indirect loss exclusion)
+14. SUSPENSION
+15. TERMINATION AND CONSEQUENCES (30 days written notice; Tranche 1 non-refundable once development starts)
+16. DISPUTE RESOLUTION AND GOVERNING LAW (Arbitration in Nairobi under Kenyan Arbitration Act 1995; laws of Kenya)
+17. NOTICES (Provider: KRATOS SYSTEMS / TYRESE MUIGAI, P.O. BOX 9643-00100, INFO@KRATOSYSTEMS.AFRICA)
+18. GENERAL (Entire agreement, severability, execution in counterparts)
+
+### SIGNATURE BLOCKS
+Include formal execution blocks for Tyrese Muigai (Provider) and the Client's Authorized Signatory.
+
+### SCHEDULE A — STATEMENT OF WORK
+- A1. Project Objective
+- A2. Confirmed Modules and Functionality (Break down specific modules based on discovery notes)
+- A3. Technical Architecture Table (Frontend: Next.js/React, Backend: Django REST, DB: PostgreSQL, Automations: n8n, Security)
+- A4. Data Onboarding and Migration
+- A5. Third-Party Services and Cost Allocation
+- A6. Delivery Milestones and Acceptance Criteria Table
+- A7. Client Dependencies & Assumptions
+- A8. Exclusions
+
+### SCHEDULE B — COMMERCIAL SCHEDULE & PAYMENT TERMS
+- B1. Fixed Fee & Two-Tranche Milestone Payment Structure (Tranche 1 commencement 50%, Tranche 2 completion 50%)
+- B2. Tax Treatment Checkboxes (Inclusive vs Exclusive of VAT)
+- B3. Payment Instructions (NCBA BANK KENYA, Account Name: Kratos Systems, Account No: 1012773263, or M-Pesa Paybill)
+- B4. Commercial Contact Details (Client contact and Tyrese Muigai - 0718004282 - tyresemuigai09@gmail.com)
+
+Draft this with complete precision, legal gravity, and technical exactness."""
 
         if getattr(settings, "OPENAI_API_KEY", None):
             import openai

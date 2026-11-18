@@ -82,3 +82,4 @@ volumes:
   static_volume:
   caddy_data:
   caddy_config:
+

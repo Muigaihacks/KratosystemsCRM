@@ -63,6 +63,7 @@ export default function InvoicesPage() {
   ]);
   const [submitting, setSubmitting] = useState(false);
   const [etimsSubmittingId, setEtimsSubmittingId] = useState<string | null>(null);
+  const [previewInvoice, setPreviewInvoice] = useState<Invoice | null>(null);
 
   const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -338,10 +339,18 @@ export default function InvoicesPage() {
                     </td>
 
                     <td className="py-4 px-5 text-right">
-                      <button className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1 ml-auto">
-                        <Send className="w-3 h-3" />
-                        Send PDF
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setPreviewInvoice(inv)}
+                          className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 text-xs transition-all"
+                        >
+                          View Official
+                        </button>
+                        <button className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1">
+                          <Send className="w-3 h-3" />
+                          Send PDF
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -495,6 +504,178 @@ export default function InvoicesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Official Kratos Invoice Template Preview Modal */}
+      {previewInvoice && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white text-slate-800 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8 relative animate-in fade-in zoom-in-95 duration-200">
+            {/* Action Bar (Top) */}
+            <div className="bg-slate-900 text-white px-6 py-3 flex items-center justify-between no-print">
+              <span className="text-xs font-mono uppercase tracking-wider text-kratos-400 font-semibold">
+                Official Kratos Systems Invoice Preview
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="px-3 py-1 bg-kratos-500 hover:bg-kratos-600 text-white rounded-lg text-xs font-medium transition-all"
+                >
+                  Print / Save PDF
+                </button>
+                <button
+                  onClick={() => setPreviewInvoice(null)}
+                  className="text-white/60 hover:text-white p-1"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Invoice Printable Sheet */}
+            <div className="p-8 sm:p-12 relative bg-white">
+              {/* Top Geometric Accent Bars */}
+              <div className="flex items-center justify-end gap-1.5 mb-8">
+                <div className="w-12 h-3.5 bg-kratos-500 transform -skew-x-12" />
+                <div className="w-12 h-3.5 bg-slate-800 transform -skew-x-12" />
+              </div>
+
+              {/* Header: Logo & Invoice Metadata */}
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-200 pb-8 mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-kratos-500/10 border border-kratos-500/30 flex items-center justify-center p-1.5">
+                    <img
+                      src="/kratos-emblem.png"
+                      alt="Kratos Systems"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold tracking-tight text-slate-900 font-display">
+                      KRATOS SYSTEMS
+                    </h2>
+                    <p className="text-xs text-slate-500 italic font-serif">
+                      You Dream it, We Build it!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right sm:text-right">
+                  <div className="text-sm font-bold text-slate-900 font-mono tracking-wider">
+                    INVOICE NO: {previewInvoice.invoice_number}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1 font-mono">
+                    DATE: {new Date(previewInvoice.created_at || Date.now()).toLocaleDateString("en-GB")}
+                  </div>
+                  <div className="text-xs text-slate-500 font-mono">
+                    DUE: {previewInvoice.due_date ? new Date(previewInvoice.due_date).toLocaleDateString("en-GB") : "On Receipt"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Issued To & Pay To Columns */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8 text-xs">
+                <div>
+                  <div className="font-mono uppercase font-bold text-slate-400 tracking-wider text-[10px] mb-1">
+                    ISSUED TO:
+                  </div>
+                  <div className="font-bold text-slate-900 text-sm">
+                    {previewInvoice.client_name.toUpperCase()}
+                  </div>
+                  <div className="text-slate-600 mt-0.5">
+                    Attn: Primary Account Director
+                  </div>
+                  <div className="text-slate-500 font-mono">
+                    {previewInvoice.sent_to || "finance@client.org"}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="font-mono uppercase font-bold text-slate-400 tracking-wider text-[10px] mb-1">
+                    PAY TO:
+                  </div>
+                  <div className="font-bold text-slate-900 text-sm">
+                    NCBA BANK KENYA
+                  </div>
+                  <div className="text-slate-700 mt-0.5">
+                    <span className="text-slate-400">Account Name:</span> Kratos Systems
+                  </div>
+                  <div className="text-slate-900 font-mono font-semibold">
+                    <span className="text-slate-400 font-normal">Account No.:</span> 1012773263
+                  </div>
+                </div>
+              </div>
+
+              {/* Line Items Table */}
+              <div className="border-t-2 border-slate-900 mb-8">
+                <table className="w-full text-xs text-left">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-900 font-bold uppercase tracking-wider text-[10px]">
+                      <th className="py-3 px-2">DESCRIPTION</th>
+                      <th className="py-3 px-2 text-right">UNIT PRICE(KSH)</th>
+                      <th className="py-3 px-2 text-center">QTY</th>
+                      <th className="py-3 px-2 text-right">TOTAL</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {(previewInvoice.line_items || []).map((item, idx) => (
+                      <tr key={idx} className="text-slate-700">
+                        <td className="py-4 px-2 pr-4 font-medium text-slate-900">
+                          {item.description}
+                        </td>
+                        <td className="py-4 px-2 text-right font-mono">
+                          {item.amount_kes.toLocaleString()}
+                        </td>
+                        <td className="py-4 px-2 text-center font-mono">1</td>
+                        <td className="py-4 px-2 text-right font-mono font-semibold text-slate-900">
+                          {item.amount_kes.toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Subtotal & Total */}
+              <div className="border-t border-slate-900 pt-4 mb-12 flex justify-between items-center">
+                <div className="font-bold text-slate-900 text-sm uppercase tracking-wider font-display">
+                  SUBTOTAL
+                </div>
+                <div className="text-lg font-bold text-slate-900 font-mono">
+                  KSH {parseFloat(previewInvoice.total_kes).toLocaleString()}
+                </div>
+              </div>
+
+              {/* Sign-off & Signature */}
+              <div className="flex flex-col sm:flex-row justify-between items-end gap-6 pt-6 border-t border-slate-200">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">
+                    Thank you for your business!
+                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Kratos Systems Ltd • Nairobi, Kenya
+                  </p>
+                </div>
+
+                <div className="text-center w-48">
+                  <div className="h-12 flex items-center justify-center">
+                    <span className="font-serif italic text-lg text-slate-600 tracking-wider">
+                      Tyrese Muigai
+                    </span>
+                  </div>
+                  <div className="border-t border-slate-900 pt-1 text-[11px] text-slate-600 font-medium">
+                    Authorized Signatory
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Diagonal Chevron Bar */}
+              <div className="mt-10 pt-4 flex items-center justify-end">
+                <div className="w-16 h-4 bg-kratos-500 transform -skew-x-12" />
+                <div className="w-8 h-4 bg-slate-900 transform -skew-x-12" />
+              </div>
+            </div>
           </div>
         </div>
       )}
