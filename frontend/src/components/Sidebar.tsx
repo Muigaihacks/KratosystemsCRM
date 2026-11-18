@@ -40,10 +40,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   return (
     <aside
-      className={clsx(
-        "fixed left-0 top-0 h-screen flex flex-col border-r border-white/8 bg-surface z-40 transition-all duration-300 ease-in-out",
-        collapsed ? "w-[72px]" : "w-[240px]"
-      )}
+      style={{ width: `${collapsed ? 72 : 240}px` }}
+      className="fixed left-0 top-0 h-screen flex flex-col border-r border-white/8 bg-surface z-40 transition-[width] duration-300 ease-in-out select-none"
     >
       {/* Header / Logo + Toggle */}
       <div

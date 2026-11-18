@@ -23,17 +23,21 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     });
   };
 
+  const sidebarWidth = collapsed ? 72 : 240;
+
   return (
-    <div className="flex min-h-screen bg-surface text-white">
+    <div className="flex min-h-screen bg-surface text-white w-full overflow-x-hidden">
       <Sidebar collapsed={collapsed} onToggle={toggleCollapsed} />
       <main
-        className={`flex-1 min-h-screen transition-all duration-300 ease-in-out ${
-          collapsed ? "ml-[72px]" : "ml-[240px]"
-        }`}
+        style={{
+          marginLeft: `${sidebarWidth}px`,
+          width: `calc(100vw - ${sidebarWidth}px)`,
+          maxWidth: `calc(100vw - ${sidebarWidth}px)`,
+        }}
+        className="flex-1 min-h-screen transition-[margin-left,width,max-width] duration-300 ease-in-out"
       >
         {children}
       </main>
     </div>
   );
 }
-
