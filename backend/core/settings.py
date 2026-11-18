@@ -15,7 +15,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret-key-change-in-production")
 DEBUG = os.environ.get("DEBUG", "True") == "True"
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = os.environ.get(
+    "ALLOWED_HOSTS", 
+    "localhost,127.0.0.1,34.62.73.8,api.qrf.kratosystems.africa,backend,*"
+).split(",")
 
 # Application definition
 INSTALLED_APPS = [
@@ -101,8 +104,9 @@ REST_FRAMEWORK = {
 # CORS — allow Next.js frontend
 CORS_ALLOWED_ORIGINS = os.environ.get(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:3000,http://127.0.0.1:3000"
+    "http://localhost:3000,http://127.0.0.1:3000,https://qrf.kratosystems.africa,http://34.62.73.8:3000"
 ).split(",")
+CORS_ALLOW_ALL_ORIGINS = True  # Permissive during deployment setup
 CORS_ALLOW_CREDENTIALS = True
 
 # Static & Media
