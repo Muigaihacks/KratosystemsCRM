@@ -278,7 +278,7 @@ export default function ClientProfilePage({
                   {client.company_name}
                 </h1>
                 <p className="text-xs text-white/50 uppercase tracking-wider font-mono">
-                  {client.industry} • Added by {client.source === "chris" ? "Chris (Wylde)" : "Tyrese"}
+                  {client.industry} • Added via {client.source === "chris" ? "Wylde Partner" : "Direct Inbound"}
                 </p>
               </div>
             </div>

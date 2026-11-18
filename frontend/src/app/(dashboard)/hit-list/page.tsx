@@ -127,7 +127,7 @@ export default function HitListPage() {
           <div className="flex items-center gap-2 mb-1">
             <span className="mono-label-teal">// BUSINESS DEVELOPMENT</span>
             <span className="text-white/20">•</span>
-            <span className="text-xs text-white/50">CHRIS ODONGO NETWORK</span>
+            <span className="text-xs text-white/50">STRATEGIC BD NETWORK</span>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-white flex items-center gap-3">
             <Target className="w-6 h-6 text-kratos-400" />
@@ -231,7 +231,7 @@ export default function HitListPage() {
             <Target className="w-10 h-10 text-white/20 mx-auto mb-3" />
             <h3 className="text-sm font-medium text-white/80">No prospects in Hit List</h3>
             <p className="text-xs text-white/40 mt-1 max-w-sm mx-auto">
-              Add upcoming business contacts from Chris&apos;s Wylde network to track them here.
+              Add upcoming business contacts from strategic partner networks to track them here.
             </p>
             <button
               onClick={() => setShowNewModal(true)}
@@ -302,9 +302,9 @@ export default function HitListPage() {
                     <td className="py-4 px-4">
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-kratos-500/10 text-kratos-300 border border-kratos-500/20">
                         {client.source === "chris"
-                          ? "Chris (Wylde)"
+                          ? "Wylde Partner"
                           : client.source === "tyrese"
-                          ? "Tyrese"
+                          ? "Direct Inbound"
                           : client.source}
                       </span>
                     </td>

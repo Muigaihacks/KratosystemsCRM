@@ -128,7 +128,7 @@ export default function PipelinePage() {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-7 py-5 border-b border-white/8 bg-surface flex-shrink-0">
+      <div className="flex items-center justify-between px-7 py-5 glass-header flex-shrink-0">
         <div>
           <p className="mono-label-teal mb-1">// PIPELINE</p>
           <h1 className="font-display text-white text-2xl font-semibold tracking-tight">

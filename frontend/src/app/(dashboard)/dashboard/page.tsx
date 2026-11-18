@@ -109,14 +109,14 @@ export default function DashboardPage() {
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-6 rounded-2xl">
         <div>
           <p className="mono-label-teal mb-1">// EXECUTIVE DASHBOARD</p>
           <h1 className="font-display text-white text-2xl font-bold tracking-tight">
             Kratos Systems Executive Suite
           </h1>
           <p className="text-white/50 text-xs mt-1">
-            Overview of commercial deal flow, Chris Odongo partnership intake, and live engineering builds.
+            Overview of commercial deal flow, strategic enterprise intake, and live engineering builds.
           </p>
         </div>
 

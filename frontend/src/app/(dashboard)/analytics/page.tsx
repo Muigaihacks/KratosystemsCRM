@@ -123,7 +123,7 @@ export default function AnalyticsPage() {
             <Users className="w-4 h-4 text-emerald-400" />
           </div>
           <p className="text-2xl font-bold text-white mt-2">83%</p>
-          <p className="text-xs text-emerald-400/80 mt-1">Chris / Wylde Network</p>
+          <p className="text-xs text-emerald-400/80 mt-1">Strategic Partner Network</p>
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl" />
         </div>
       </div>
