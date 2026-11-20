@@ -235,7 +235,7 @@ export default function TeamPage() {
           <div className="text-2xl font-bold text-kratos-400 mt-1 font-mono">
             {members.filter((m) => m.role === "admin").length}
           </div>
-          <div className="text-xs text-white/50 mt-1">Tyrese Muigai & Chris Odongo</div>
+          <div className="text-xs text-white/50 mt-1">Executive & System Leads</div>
         </div>
 
         <div className="glass-card p-5">
