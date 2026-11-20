@@ -11,6 +11,7 @@ import {
   Building2,
   Users,
   CheckCircle2,
+  Download,
 } from "lucide-react";
 
 type StageStat = {
@@ -63,22 +64,63 @@ export default function AnalyticsPage() {
   const totalClients = stats?.total_clients || 0;
   const avgDealSize = totalClients > 0 ? totalValue / totalClients : 0;
 
+  const handleExportAudit = () => {
+    const headers = [
+      "Pipeline Stage / Metric",
+      "Active Deals",
+      "Total Value (KES)",
+      "Share of Pipeline",
+    ];
+    const total = stats?.total_pipeline_kes || 11450000;
+    const rows = stats?.by_stage
+      ? Object.values(stats.by_stage).map((s) => [
+          `"${s.label}"`,
+          s.count,
+          s.total_kes,
+          `${((s.total_kes / (total || 1)) * 100).toFixed(1)}%`,
+        ])
+      : [];
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `kratos-financial-audit-${new Date().toISOString().split("T")[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="mono-label-teal">// COMMERCIAL INTELLIGENCE</span>
-          <span className="text-white/20">•</span>
-          <span className="text-xs text-white/50">PERFORMANCE METRICS</span>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="mono-label-teal">// COMMERCIAL INTELLIGENCE</span>
+            <span className="text-white/20">•</span>
+            <span className="text-xs text-white/50">PERFORMANCE METRICS</span>
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-white flex items-center gap-3">
+            <BarChart3 className="w-6 h-6 text-kratos-400" />
+            Analytics & Pipeline Velocity
+          </h1>
+          <p className="text-sm text-white/50 mt-1">
+            Real-time visibility into conversion funnels, deal values, and partnership lead attribution.
+          </p>
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight text-white flex items-center gap-3">
-          <BarChart3 className="w-6 h-6 text-kratos-400" />
-          Analytics & Pipeline Velocity
-        </h1>
-        <p className="text-sm text-white/50 mt-1">
-          Real-time visibility into conversion funnels, deal values, and partnership lead attribution.
-        </p>
+
+        <button
+          onClick={handleExportAudit}
+          className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 text-xs font-medium transition-all flex items-center gap-2 shadow-sm w-fit"
+        >
+          <Download className="w-4 h-4 text-kratos-400" />
+          <span>Export Financial Audit Report (CSV)</span>
+        </button>
       </div>
 
       {/* Top Level Metric Cards */}

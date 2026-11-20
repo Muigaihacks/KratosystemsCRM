@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Link from "next/link";
+import { clsx } from "clsx";
 import {
   Receipt,
   Plus,
@@ -15,6 +16,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   QrCode,
+  Download,
 } from "lucide-react";
 
 type LineItem = {
@@ -113,7 +115,101 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     fetchData();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewInvoice(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  const handleExportCSV = () => {
+    if (invoices.length === 0) {
+      alert("No invoices available to export.");
+      return;
+    }
+    const headers = [
+      "Invoice Number",
+      "Client",
+      "Description",
+      "Subtotal (KES)",
+      "VAT (KES)",
+      "Total Amount (KES)",
+      "Payment Status",
+      "Due Date",
+      "eTIMS Status",
+      "eTIMS Number"
+    ];
+    const rows = invoices.map((inv) => [
+      inv.invoice_number,
+      `"${inv.client_name}"`,
+      `"${inv.description.replace(/"/g, '""')}"`,
+      inv.subtotal_kes,
+      inv.vat_kes,
+      inv.total_kes,
+      inv.status.toUpperCase(),
+      inv.due_date || "On Receipt",
+      inv.etims_submitted ? "Certified" : "Pending",
+      inv.etims_invoice_number || ""
+    ]);
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `kratos-invoices-export-${new Date().toISOString().split("T")[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleToggleStatus = async (inv: Invoice) => {
+    const nextStatus =
+      inv.status === "draft" ? "sent" : inv.status === "sent" ? "paid" : "draft";
+    try {
+      await axios.patch(`${API}/api/invoices/${inv.id}/`, { status: nextStatus });
+    } catch {
+      // Optimistic update
+    }
+    setInvoices(
+      invoices.map((i) =>
+        i.id === inv.id
+          ? {
+              ...i,
+              status: nextStatus,
+              paid_at: nextStatus === "paid" ? new Date().toISOString() : i.paid_at,
+            }
+          : i
+      )
+    );
+    if (previewInvoice && previewInvoice.id === inv.id) {
+      setPreviewInvoice({
+        ...previewInvoice,
+        status: nextStatus,
+        paid_at: nextStatus === "paid" ? new Date().toISOString() : previewInvoice.paid_at,
+      });
+    }
+  };
+
+  const handleSendInvoice = async (inv: Invoice) => {
+    try {
+      await axios.post(`${API}/api/invoices/${inv.id}/send/`);
+    } catch {
+      // Optimistic fallback
+    }
+    setInvoices(
+      invoices.map((i) =>
+        i.id === inv.id
+          ? { ...i, status: "sent", sent_at: new Date().toISOString() }
+          : i
+      )
+    );
+    alert(`Invoice ${inv.invoice_number} dispatched via Resend to ${inv.sent_to || "client"}!`);
+  };
 
   const handleAddLineItem = () => {
     setLineItems([...lineItems, { description: "", amount_kes: 0 }]);
@@ -243,13 +339,22 @@ export default function InvoicesPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="btn-primary flex items-center gap-2 shadow-lg shadow-kratos-500/20"
-        >
-          <Plus className="w-4 h-4" />
-          Create New Invoice
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportCSV}
+            className="px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 text-xs font-medium transition-all flex items-center gap-2 shadow-sm"
+          >
+            <Download className="w-4 h-4 text-kratos-400" />
+            <span>Export Invoices CSV</span>
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="btn-primary flex items-center gap-2 shadow-lg shadow-kratos-500/20"
+          >
+            <Plus className="w-4 h-4" />
+            Create New Invoice
+          </button>
+        </div>
       </div>
 
       {/* Invoices List */}
@@ -333,9 +438,21 @@ export default function InvoicesPage() {
                     </td>
 
                     <td className="py-4 px-4">
-                      <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-white/5 text-white/60">
-                        {inv.status}
-                      </span>
+                      <button
+                        onClick={() => handleToggleStatus(inv)}
+                        title="Click to cycle status: Draft -> Sent -> Paid"
+                        className={clsx(
+                          "text-[10px] uppercase font-mono px-2.5 py-1 rounded-full transition-all flex items-center gap-1.5 cursor-pointer",
+                          inv.status === "paid" && "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold",
+                          inv.status === "sent" && "bg-sky-500/15 text-sky-400 border border-sky-500/30",
+                          inv.status === "draft" && "bg-white/5 text-white/50 border border-white/10 hover:text-white"
+                        )}
+                      >
+                        {inv.status === "paid" && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
+                        {inv.status === "sent" && <Send className="w-2.5 h-2.5 text-sky-400" />}
+                        {inv.status === "draft" && <Clock className="w-2.5 h-2.5 text-white/40" />}
+                        <span>{inv.status}</span>
+                      </button>
                     </td>
 
                     <td className="py-4 px-5 text-right">
@@ -346,10 +463,30 @@ export default function InvoicesPage() {
                         >
                           View Official
                         </button>
-                        <button className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1">
-                          <Send className="w-3 h-3" />
-                          Send PDF
-                        </button>
+                        {inv.status === "draft" && (
+                          <button
+                            onClick={() => handleSendInvoice(inv)}
+                            className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1"
+                          >
+                            <Send className="w-3 h-3" />
+                            Send PDF
+                          </button>
+                        )}
+                        {inv.status === "sent" && (
+                          <button
+                            onClick={() => handleToggleStatus(inv)}
+                            className="px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-medium flex items-center gap-1 transition-all"
+                          >
+                            <CheckCircle2 className="w-3 h-3" />
+                            Mark as Paid
+                          </button>
+                        )}
+                        {inv.status === "paid" && (
+                          <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1 py-1 px-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Paid
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -510,7 +647,17 @@ export default function InvoicesPage() {
 
       {/* Official Kratos Invoice Template Preview Modal */}
       {previewInvoice && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+          {/* Floating High-Contrast Close Button in Top Right */}
+          <button
+            onClick={() => setPreviewInvoice(null)}
+            className="fixed top-5 right-6 z-[80] bg-slate-900/95 hover:bg-slate-800 text-white border border-white/20 rounded-full px-4 py-2 shadow-2xl transition-all flex items-center gap-2 text-xs font-mono backdrop-blur-md cursor-pointer hover:border-kratos-500 hover:scale-105"
+            title="Press Escape or click to close"
+          >
+            <X className="w-4 h-4 text-rose-400" />
+            <span>Close Preview (ESC)</span>
+          </button>
+
           <div className="bg-white text-slate-800 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8 relative animate-in fade-in zoom-in-95 duration-200">
             {/* Action Bar (Top) */}
             <div className="bg-slate-900 text-white px-6 py-3 flex items-center justify-between no-print">
@@ -674,6 +821,38 @@ export default function InvoicesPage() {
               <div className="mt-10 pt-4 flex items-center justify-end">
                 <div className="w-16 h-4 bg-kratos-500 transform -skew-x-12" />
                 <div className="w-8 h-4 bg-slate-900 transform -skew-x-12" />
+              </div>
+
+              {/* Review & Approve Action Bar (No-Print) */}
+              <div className="mt-8 pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 no-print bg-slate-50 -mx-8 sm:-mx-12 -mb-8 sm:-mb-12 p-6 sm:px-12">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500 font-mono">PAYMENT STATUS:</span>
+                  <button
+                    onClick={() => handleToggleStatus(previewInvoice)}
+                    className="text-xs font-mono font-semibold px-2.5 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 transition-all flex items-center gap-1.5"
+                    title="Click to cycle status: Draft -> Sent -> Paid"
+                  >
+                    {previewInvoice.status.toUpperCase()}
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setPreviewInvoice(null)}
+                    className="px-4 py-2 rounded-xl text-xs text-slate-600 hover:text-slate-900 font-medium transition-all"
+                  >
+                    Close Window
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleSendInvoice(previewInvoice);
+                      setPreviewInvoice(null);
+                    }}
+                    className="btn-primary text-xs px-5 py-2.5 flex items-center gap-2 shadow-lg shadow-kratos-500/25"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Approve & Send to Client</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

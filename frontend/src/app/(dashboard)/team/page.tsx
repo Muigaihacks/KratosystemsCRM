@@ -17,27 +17,130 @@ import {
   Filter,
   Layers,
   Sparkles,
+  Sliders,
+  Plus,
+  Check,
+  Building2,
 } from "lucide-react";
 import { clsx } from "clsx";
 
-interface Permissions {
-  dashboard: boolean;
-  hit_list: boolean;
-  pipeline: boolean;
-  clients: boolean;
-  sessions: boolean;
-  proposals: boolean;
-  invoices: boolean;
-  analytics: boolean;
-  team_management: boolean;
-  export_data: boolean;
+export type AccessTier = "none" | "read" | "write";
+
+export interface GranularPermissions {
+  dashboard: AccessTier;
+  pipeline: AccessTier;
+  hit_list: AccessTier;
+  clients: AccessTier;
+  sessions: AccessTier;
+  proposals: AccessTier;
+  invoices: AccessTier;
+  analytics: AccessTier;
+  team_management: AccessTier;
+  export_data: AccessTier;
 }
+
+export interface RoleDef {
+  id: string;
+  name: string;
+  description: string;
+  badge_color: string;
+  permissions: GranularPermissions;
+  is_custom?: boolean;
+}
+
+export const MODULE_DEFINITIONS: { key: keyof GranularPermissions; label: string; desc: string }[] = [
+  { key: "dashboard", label: "Executive Dashboard", desc: "Company revenue, active pipeline sum, and high-level KPI cards" },
+  { key: "pipeline", label: "Deals Pipeline (Kanban)", desc: "8-stage drag & drop commercial pipeline, deal sizing, and lead movement" },
+  { key: "hit_list", label: "Prospects Hit List", desc: "Pre-pipeline company targeting, qualification criteria, and intake review" },
+  { key: "clients", label: "Client Directory & Context", desc: "Corporate client master records, contact persons, and technical profiles" },
+  { key: "sessions", label: "Meeting Intelligence", desc: "Recall.ai bot dispatch, audio recordings, and AssemblyAI transcripts" },
+  { key: "proposals", label: "14-Page Agreements & SOW", desc: "Clause drafting, ODPC compliance terms, and digital contract signing" },
+  { key: "invoices", label: "NCBA Bank Invoices & eTIMS", desc: "Itemized tax invoices, KRA eTIMS QR generation, and Resend PDF dispatch" },
+  { key: "analytics", label: "Financial Analytics & Velocity", desc: "Conversion rates, partnership lead attribution, and cash collections" },
+  { key: "team_management", label: "Team & User Security", desc: "Staff provisioning, password reset limit tracking (3 max), and lockouts" },
+  { key: "export_data", label: "Data & Financial CSV Export", desc: "Audit CSV generation for accounting, taxation, and milestone reconciliation" },
+];
+
+export const INITIAL_ROLES: RoleDef[] = [
+  {
+    id: "admin",
+    name: "Super Admin",
+    description: "Full commercial, financial, and user provisioning authority",
+    badge_color: "emerald",
+    permissions: {
+      dashboard: "write",
+      pipeline: "write",
+      hit_list: "write",
+      clients: "write",
+      sessions: "write",
+      proposals: "write",
+      invoices: "write",
+      analytics: "write",
+      team_management: "write",
+      export_data: "write",
+    },
+  },
+  {
+    id: "bd",
+    name: "Business Development",
+    description: "Pipeline acceleration, client intake, proposals, and deal closing",
+    badge_color: "sky",
+    permissions: {
+      dashboard: "read",
+      pipeline: "write",
+      hit_list: "write",
+      clients: "write",
+      sessions: "write",
+      proposals: "write",
+      invoices: "read",
+      analytics: "read",
+      team_management: "none",
+      export_data: "none",
+    },
+  },
+  {
+    id: "finance",
+    name: "Finance Controller",
+    description: "NCBA invoice reconciliation, financial audits, and eTIMS tax compliance",
+    badge_color: "amber",
+    permissions: {
+      dashboard: "read",
+      pipeline: "read",
+      hit_list: "none",
+      clients: "read",
+      sessions: "none",
+      proposals: "read",
+      invoices: "write",
+      analytics: "write",
+      team_management: "none",
+      export_data: "write",
+    },
+  },
+  {
+    id: "developer",
+    name: "Technical Developer",
+    description: "Assigned build delivery, technical review, and meeting transcripts",
+    badge_color: "violet",
+    permissions: {
+      dashboard: "read",
+      pipeline: "read",
+      hit_list: "none",
+      clients: "read",
+      sessions: "write",
+      proposals: "none",
+      invoices: "none",
+      analytics: "none",
+      team_management: "none",
+      export_data: "none",
+    },
+  },
+];
 
 interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "bd" | "developer";
+  role: string;
   role_display: string;
   status: "active" | "invited" | "deactivated" | "locked";
   status_display: string;
@@ -46,7 +149,7 @@ interface TeamMember {
   is_locked: boolean;
   phone: string;
   notes: string;
-  permissions: Permissions;
+  permissions?: any;
   last_active_at: string | null;
   created_at: string;
 }
@@ -57,20 +160,88 @@ export default function TeamPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
+
+  // Dynamic Roles State
+  const [roles, setRoles] = useState<RoleDef[]>(INITIAL_ROLES);
+  const [customRoleName, setCustomRoleName] = useState("");
+  const [customRoleDesc, setCustomRoleDesc] = useState("");
+  const [customRoleColor, setCustomRoleColor] = useState("emerald");
+  const [customRolePerms, setCustomRolePerms] = useState<GranularPermissions>({
+    dashboard: "read",
+    pipeline: "read",
+    hit_list: "none",
+    clients: "read",
+    sessions: "none",
+    proposals: "none",
+    invoices: "read",
+    analytics: "none",
+    team_management: "none",
+    export_data: "none",
+  });
+
+  // Load Custom Roles from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("kratos_custom_roles");
+      if (saved) {
+        const parsed: RoleDef[] = JSON.parse(saved);
+        setRoles([...INITIAL_ROLES, ...parsed]);
+      }
+    } catch (e) {
+      console.error("Failed to load custom roles", e);
+    }
+  }, []);
+
+  const handleSaveCustomRole = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customRoleName.trim()) return;
+
+    const roleId = customRoleName.toLowerCase().replace(/[^a-z0-9]/g, "_");
+    const newRoleObj: RoleDef = {
+      id: roleId,
+      name: customRoleName.trim(),
+      description: customRoleDesc.trim() || "Custom organizational role",
+      badge_color: customRoleColor,
+      permissions: { ...customRolePerms },
+      is_custom: true,
+    };
+
+    const updated = [...roles.filter((r) => r.id !== roleId), newRoleObj];
+    setRoles(updated);
+    try {
+      const customs = updated.filter((r) => r.is_custom);
+      localStorage.setItem("kratos_custom_roles", JSON.stringify(customs));
+    } catch (err) {
+      console.error("Error saving role", err);
+    }
+
+    setActionNotice(`Custom role '${newRoleObj.name}' saved with granular permissions.`);
+    setTimeout(() => setActionNotice(null), 5000);
+    setIsRoleModalOpen(false);
+    setCustomRoleName("");
+    setCustomRoleDesc("");
+  };
+
+  const handlePermChange = (moduleKey: keyof GranularPermissions, level: AccessTier) => {
+    setCustomRolePerms((prev) => ({ ...prev, [moduleKey]: level }));
+  };
 
   // New Member Form State
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
-  const [newRole, setNewRole] = useState<"admin" | "bd" | "developer">("developer");
+  const [newRole, setNewRole] = useState<string>("developer");
   const [newPhone, setNewPhone] = useState("");
   const [newNotes, setNewNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const API = process.env.NEXT_PUBLIC_API_URL || "https://api.qrf.kratosystems.africa";
+
   // Fetch Team Members
   const fetchTeam = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/team/");
+      const res = await fetch(`${API}/api/team/`);
       if (res.ok) {
         const data = await res.json();
         setMembers(data.results || data);
@@ -94,7 +265,7 @@ export default function TeamPage() {
     if (!confirmPrompt) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/api/team/${member.id}/reset-password/`, {
+      const res = await fetch(`${API}/api/team/${member.id}/reset-password/`, {
         method: "POST",
       });
       const data = await res.json();
@@ -111,7 +282,7 @@ export default function TeamPage() {
   // Handle Account Unlock
   const handleUnlock = async (member: TeamMember) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/team/${member.id}/unlock/`, {
+      const res = await fetch(`${API}/api/team/${member.id}/unlock/`, {
         method: "POST",
       });
       const data = await res.json();
@@ -131,7 +302,7 @@ export default function TeamPage() {
     if (!window.confirm(`Are you sure you want to ${action} ${member.name}'s account?`)) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/api/team/${member.id}/toggle-status/`, {
+      const res = await fetch(`${API}/api/team/${member.id}/toggle-status/`, {
         method: "POST",
       });
       const data = await res.json();
@@ -152,7 +323,7 @@ export default function TeamPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch("http://localhost:8000/api/team/", {
+      const res = await fetch(`${API}/api/team/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -213,13 +384,22 @@ export default function TeamPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsInviteModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-kratos-500 hover:bg-kratos-600 text-white font-medium text-sm transition-all shadow-lg shadow-kratos-500/20 w-fit"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span>Invite Team Member</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsRoleModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 font-medium text-sm transition-all shadow-sm w-fit"
+          >
+            <Sliders className="w-4 h-4 text-kratos-400" />
+            <span>Manage Roles & Permissions</span>
+          </button>
+          <button
+            onClick={() => setIsInviteModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-kratos-500 hover:bg-kratos-600 text-white font-medium text-sm transition-all shadow-lg shadow-kratos-500/20 w-fit"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Invite Team Member</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Overview Cards */}
@@ -470,74 +650,86 @@ export default function TeamPage() {
       </div>
 
       {/* Role Permission Matrix Section */}
-      <div className="glass-card p-6">
-        <div className="flex items-center gap-2.5 mb-4">
-          <Layers className="w-5 h-5 text-kratos-400" />
-          <h2 className="text-base font-semibold text-white">Role Permission Architecture</h2>
-        </div>
-        <p className="text-xs text-white/50 mb-6">
-          Access control boundaries enforced across Kratos Systems CRM without requiring an external admin panel
-        </p>
+      <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2.5 mb-1">
+              <Layers className="w-5 h-5 text-kratos-400" />
+              <h2 className="text-base font-semibold text-white">Granular 3-Tier Role Permission Architecture</h2>
+            </div>
+            <p className="text-xs text-white/50">
+              Multi-tiered commercial access control enforced across all 10 CRM operational modules
+            </p>
+          </div>
 
-        <div className="overflow-x-auto">
+          <button
+            onClick={() => setIsRoleModalOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 text-xs font-medium transition-all w-fit cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5 text-kratos-400" />
+            <span>Create Custom Role</span>
+          </button>
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap items-center gap-3 pt-2 text-[11px] font-mono">
+          <span className="text-white/40">Access Tiers:</span>
+          <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">None (Hidden & Blocked)</span>
+          <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Read (View & Audit Only)</span>
+          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Write (Full Authoring & Control)</span>
+        </div>
+
+        <div className="overflow-x-auto pt-2">
           <table className="w-full text-xs text-left">
             <thead>
               <tr className="border-b border-white/10 text-white/40 font-mono uppercase">
-                <th className="py-2.5 px-3">CRM Module</th>
-                <th className="py-2.5 px-3 text-gold-400">Super Admin (Tyrese & Chris)</th>
-                <th className="py-2.5 px-3 text-cyan-400">Business Dev (BD)</th>
-                <th className="py-2.5 px-3 text-violet-400">Technical Developer</th>
+                <th className="py-3 px-3">CRM Module</th>
+                {roles.map((r) => (
+                  <th key={r.id} className="py-3 px-3 font-semibold text-white">
+                    <span className="flex items-center gap-1.5">
+                      <span>{r.name}</span>
+                      {r.is_custom && (
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-kratos-500/20 text-kratos-300 font-normal">
+                          Custom
+                        </span>
+                      )}
+                    </span>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-white/70">
-              <tr>
-                <td className="py-2.5 px-3 font-medium text-white">Executive Dashboard</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">Full Access (KES Metrics)</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">Full Access</td>
-                <td className="py-2.5 px-3 text-white/40 font-mono">Tasks / Assigned Leads</td>
-              </tr>
-              <tr>
-                <td className="py-2.5 px-3 font-medium text-white">Hit List (Intake)</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">Full Read / Write / Advance</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">Full Read / Write / Advance</td>
-                <td className="py-2.5 px-3 text-rose-400 font-mono">Hidden</td>
-              </tr>
-              <tr>
-                <td className="py-2.5 px-3 font-medium text-white">Pipeline Kanban (Drag-Drop)</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">All 8 Stages + Pricing</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">All 8 Stages</td>
-                <td className="py-2.5 px-3 text-amber-400 font-mono">Active Build & Delivery</td>
-              </tr>
-              <tr>
-                <td className="py-2.5 px-3 font-medium text-white">Client Context & Transcripts</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">Full Access + Notes</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">Full Access + Notes</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">Assigned Client Briefs</td>
-              </tr>
-              <tr>
-                <td className="py-2.5 px-3 font-medium text-white">Recall.ai Bot Dispatch</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">Dispatch Any Meeting</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">Dispatch Client Calls</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">Dispatch Tech Reviews</td>
-              </tr>
-              <tr>
-                <td className="py-2.5 px-3 font-medium text-white">Proposals (Claude Drafter)</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">Generate, Approve, Send</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">Draft & Propose</td>
-                <td className="py-2.5 px-3 text-rose-400 font-mono">Hidden</td>
-              </tr>
-              <tr>
-                <td className="py-2.5 px-3 font-medium text-white">Invoices & KRA eTIMS</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">Create, VAT 16%, eTIMS Push</td>
-                <td className="py-2.5 px-3 text-rose-400 font-mono">Hidden</td>
-                <td className="py-2.5 px-3 text-rose-400 font-mono">Hidden</td>
-              </tr>
-              <tr>
-                <td className="py-2.5 px-3 font-medium text-white">Team & Access Control</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-mono">Invite, Reset, Deactivate</td>
-                <td className="py-2.5 px-3 text-rose-400 font-mono">Hidden</td>
-                <td className="py-2.5 px-3 text-rose-400 font-mono">Hidden</td>
-              </tr>
+              {MODULE_DEFINITIONS.map((m) => (
+                <tr key={m.key} className="hover:bg-white/[0.02]">
+                  <td className="py-3 px-3">
+                    <div className="font-medium text-white">{m.label}</div>
+                    <div className="text-[10px] text-white/40">{m.desc}</div>
+                  </td>
+                  {roles.map((r) => {
+                    const tier = r.permissions?.[m.key] || "none";
+                    return (
+                      <td key={r.id} className="py-3 px-3 font-mono">
+                        {tier === "write" && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold text-[10px]">
+                            <Check className="w-3 h-3" />
+                            Full Access
+                          </span>
+                        )}
+                        {tier === "read" && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px]">
+                            View Only
+                          </span>
+                        )}
+                        {tier === "none" && (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-white/5 text-white/30 border border-white/10 text-[10px]">
+                            None
+                          </span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -586,7 +778,7 @@ export default function TeamPage() {
                 <input
                   type="email"
                   required
-                  placeholder="dennis@kratos.africa"
+                  placeholder="dennis@kratosystems.africa"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   className="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-kratos-500"
@@ -599,12 +791,14 @@ export default function TeamPage() {
                 </label>
                 <select
                   value={newRole}
-                  onChange={(e) => setNewRole(e.target.value as any)}
+                  onChange={(e) => setNewRole(e.target.value)}
                   className="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-kratos-500"
                 >
-                  <option value="developer">Technical Developer (Assigned Tasks & Context)</option>
-                  <option value="bd">Business Development (Pipeline, Clients, Proposals)</option>
-                  <option value="admin">Super Admin (Full Financial & User Access)</option>
+                  {roles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} — {r.description}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -635,6 +829,144 @@ export default function TeamPage() {
                   className="px-4 py-2 rounded-lg bg-kratos-500 hover:bg-kratos-600 text-white text-xs font-medium transition-all shadow-lg shadow-kratos-500/20 disabled:opacity-50"
                 >
                   {submitting ? "Inviting..." : "Send Invitation Email"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Role Creator Modal */}
+      {isRoleModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
+          <div className="glass-card w-full max-w-2xl border border-white/10 p-6 my-8 rounded-2xl relative bg-surface-elevated">
+            <button
+              onClick={() => setIsRoleModalOpen(false)}
+              className="absolute top-5 right-5 text-white/40 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2.5 mb-6">
+              <div className="w-9 h-9 rounded-xl bg-kratos-500/20 text-kratos-400 flex items-center justify-center">
+                <Sliders className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Create Custom Role & Granular Permissions</h3>
+                <p className="text-xs text-white/50">
+                  Configure 3-tier read/write/none permissions across all 10 CRM modules
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveCustomRole} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-mono uppercase text-white/60 mb-1">
+                    Role Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Finance Controller"
+                    value={customRoleName}
+                    onChange={(e) => setCustomRoleName(e.target.value)}
+                    className="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-kratos-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-white/60 mb-1">
+                    Description
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Invoices audit, revenue models, tax compliance"
+                    value={customRoleDesc}
+                    onChange={(e) => setCustomRoleDesc(e.target.value)}
+                    className="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-kratos-500"
+                  />
+                </div>
+              </div>
+
+              {/* Module Granular Permission Toggles */}
+              <div className="space-y-3">
+                <div className="text-xs font-mono uppercase text-white/60 tracking-wider">
+                  Module Access Control (3-Tier)
+                </div>
+
+                <div className="divide-y divide-white/5 max-h-[45vh] overflow-y-auto pr-1">
+                  {MODULE_DEFINITIONS.map((m) => {
+                    const currentTier = customRolePerms[m.key];
+                    return (
+                      <div
+                        key={m.key}
+                        className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      >
+                        <div>
+                          <div className="text-xs font-semibold text-white">{m.label}</div>
+                          <div className="text-[10px] text-white/40">{m.desc}</div>
+                        </div>
+
+                        <div className="inline-flex rounded-lg bg-surface p-1 border border-white/10 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handlePermChange(m.key, "none")}
+                            className={clsx(
+                              "px-2.5 py-1 rounded text-[11px] font-mono transition-all",
+                              currentTier === "none"
+                                ? "bg-rose-500/20 text-rose-300 font-semibold"
+                                : "text-white/40 hover:text-white"
+                            )}
+                          >
+                            None
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handlePermChange(m.key, "read")}
+                            className={clsx(
+                              "px-2.5 py-1 rounded text-[11px] font-mono transition-all",
+                              currentTier === "read"
+                                ? "bg-amber-500/20 text-amber-300 font-semibold"
+                                : "text-white/40 hover:text-white"
+                            )}
+                          >
+                            View Only
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handlePermChange(m.key, "write")}
+                            className={clsx(
+                              "px-2.5 py-1 rounded text-[11px] font-mono transition-all",
+                              currentTier === "write"
+                                ? "bg-emerald-500/20 text-emerald-300 font-semibold"
+                                : "text-white/40 hover:text-white"
+                            )}
+                          >
+                            Full Access
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsRoleModalOpen(false)}
+                  className="px-4 py-2 rounded-lg text-xs text-white/60 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!customRoleName.trim()}
+                  className="px-5 py-2.5 rounded-lg bg-kratos-500 hover:bg-kratos-600 text-white text-xs font-medium transition-all shadow-lg shadow-kratos-500/20 disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Save Role to Catalog</span>
                 </button>
               </div>
             </form>
