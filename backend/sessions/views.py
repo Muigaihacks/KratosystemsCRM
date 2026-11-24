@@ -45,6 +45,11 @@ class ClientSessionViewSet(viewsets.ModelViewSet):
             "meeting_url": session.meeting_url,
             "bot_name": f"Kratos Notes — {session.session_name}",
             "recording_config": {"transcript": {"provider": {"meeting_captions": {}}}},
+            "metadata": {
+                "client_id": str(session.client.id),
+                "session_id": str(session.id),
+                "client_name": str(session.client.company_name),
+            },
         }
         region = getattr(settings, "RECALL_REGION", "eu-central-1")
         resp = requests.post(

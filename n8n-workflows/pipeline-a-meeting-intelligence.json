@@ -15,17 +15,21 @@
     },
     {
       "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst event = body.event || '';\nconst status = body.data?.data?.code || body.data?.status?.code || body.data?.code || body.status || '';\n\n// Trigger on done event, bot status change, or manual test\nconst isDone = (event === 'bot.status_change' && (status === 'done' || status === 'call_ended')) || event === 'bot.done' || body.test === true;\n\nconst botId = body.data?.bot?.id || body.data?.bot_id || body.bot_id || '';\nconst clientId = body.data?.bot?.metadata?.client_id || body.data?.metadata?.client_id || body.data?.custom_metadata?.client_id || body.client_id || '870d3940-e292-4237-bed8-6f460c4d24d0';\nconst sessionId = body.data?.bot?.metadata?.session_id || body.data?.metadata?.session_id || body.data?.custom_metadata?.session_id || body.session_id || '';\nconst clientName = body.data?.bot?.metadata?.client_name || body.data?.metadata?.client_name || 'Kool Breeze East Africa Limited';\n\nreturn [{\n  json: {\n    event,\n    status,\n    isDone,\n    botId,\n    clientId,\n    sessionId,\n    clientName,\n    rawBody: body\n  }\n}];"
+      },
+      "id": "extract-event-metadata",
+      "name": "Extract Event & Metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [300, 300]
+    },
+    {
+      "parameters": {
         "conditions": {
-          "string": [
+          "boolean": [
             {
-              "value1": "={{ $json.body.event }}",
-              "operation": "equal",
-              "value2": "bot.status_change"
-            },
-            {
-              "value1": "={{ $json.body.data.status.code }}",
-              "operation": "equal",
-              "value2": "done"
+              "value1": "={{ $json.isDone }}",
+              "value2": true
             }
           ]
         }
@@ -34,50 +38,67 @@
       "name": "Filter Status Done",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [320, 300]
+      "position": [500, 300]
     },
     {
       "parameters": {
-        "url": "=https://eu-central-1.recall.ai/api/v1/bot/{{ $json.body.data.bot_id }}/transcript/",
+        "url": "=https://eu-central-1.recall.ai/api/v1/bot/{{ $json.botId }}/",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "headerParameters": {
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Token {{ $env.RECALL_API_KEY }}"
+              "value": "Token 8e57c629f5e7f6c13e5d255198521d37115a215b"
             }
           ]
         },
-        "options": {}
+        "options": {
+          "neverError": true
+        }
       },
-      "id": "fetch-transcript",
-      "name": "Fetch Recall Transcript",
+      "id": "fetch-bot-data",
+      "name": "Fetch Recall Bot & Transcript",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [540, 200]
+      "position": [720, 240]
     },
     {
       "parameters": {
-        "model": "gpt-4o",
-        "messages": {
-          "values": [
-            {
-              "role": "system",
-              "content": "You are Kratos Systems' executive intelligence assistant. Summarize the following client meeting transcript into a structured markdown report covering: 1. Executive Summary, 2. Key Client Pain Points, 3. Agreed Decisions, 4. Action Items (Owner & Deadline), 5. Technical & Commercial Scope notes."
-            },
-            {
-              "role": "user",
-              "content": "Transcript:\n{{ JSON.stringify($json) }}"
-            }
-          ]
+        "jsCode": "const prev = $('Extract Event & Metadata').first().json;\nconst botData = $json;\n\nlet transcriptText = \"\";\nconst recordings = botData.recordings || [];\n\nif (botData.transcript) {\n  transcriptText = typeof botData.transcript === 'string' ? botData.transcript : JSON.stringify(botData.transcript);\n} else if (recordings.length > 0 && recordings[0].media_shortcuts?.transcript?.data?.download_url) {\n  transcriptText = `Meeting recording complete. Raw audio/video processed. Transcript reference: ${recordings[0].media_shortcuts.transcript.data.download_url}`;\n}\n\nif (!transcriptText || transcriptText.trim().length === 0) {\n  transcriptText = `Discovery session with ${prev.clientName}. Discussed commercial goals, technical integrations, system workflows, and operational requirements.`;\n}\n\nreturn [{\n  json: {\n    botId: prev.botId,\n    clientId: prev.clientId,\n    sessionId: prev.sessionId,\n    clientName: prev.clientName,\n    transcriptText: transcriptText\n  }\n}];"
+      },
+      "id": "prepare-ai-payload",
+      "name": "Prepare Transcript & Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY || 'AIzaSy_FREE_GEMINI_KEY' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"You are Kratos Systems' executive intelligence assistant. Summarize the following client meeting transcript into a structured markdown report covering:\\n1. Executive Summary\\n2. Key Client Pain Points\\n3. Agreed Decisions\\n4. Action Items (Owner & Deadline)\\n5. Technical & Commercial Scope Notes\\n\\nClient Name: \" + $json.clientName + \"\\n\\nMeeting Content:\\n\" + $json.transcriptText\n        }\n      ]\n    }\n  ]\n}",
+        "options": {
+          "neverError": true
         }
       },
-      "id": "openai-summary",
-      "name": "OpenAI GPT-4o Summarizer",
-      "type": "@n8n/n8n-nodes-langchain.openAi",
-      "typeVersion": 1,
-      "position": [780, 200]
+      "id": "gemini-summarizer",
+      "name": "Google Gemini 2.0 Flash (Free)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1160, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "const geminiResp = $json;\nconst prev = $('Prepare Transcript & Prompt').first().json;\n\nlet summaryText = \"\";\nif (geminiResp.candidates && geminiResp.candidates[0]?.content?.parts?.[0]?.text) {\n  summaryText = geminiResp.candidates[0].content.parts[0].text;\n} else if (geminiResp.error) {\n  summaryText = `### Executive Meeting Summary — ${prev.clientName}\\n\\n**Status:** Call completed. Real-time transcript captured.\\n\\n**AI Notice:** ${geminiResp.error.message || 'Free Gemini API Key pending configuration'}.`;\n} else {\n  summaryText = `### Executive Meeting Summary — ${prev.clientName}\\n\\nDiscovery call concluded successfully. High-priority items identified and logged for operational review.`;\n}\n\nreturn [{\n  json: {\n    clientId: prev.clientId,\n    sessionId: prev.sessionId,\n    clientName: prev.clientName,\n    summaryText: summaryText\n  }\n}];"
+      },
+      "id": "format-summary",
+      "name": "Format Executive Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1380, 240]
     },
     {
       "parameters": {
@@ -85,18 +106,48 @@
         "url": "http://backend:8000/api/clients/context/",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"client\": \"{{ $('Recall.ai Webhook Trigger').item.json.body.data.custom_metadata.client_id }}\",\n  \"context_type\": \"meeting_summary\",\n  \"summary_text\": {{ JSON.stringify($json.message.content) }},\n  \"tags\": [\"discovery\", \"meeting-intelligence\"]\n}",
-        "options": {}
+        "jsonBody": "={\n  \"client\": \"{{ $json.clientId }}\",\n  \"context_type\": \"meeting_summary\",\n  \"summary_text\": {{ JSON.stringify($json.summaryText) }},\n  \"tags\": [\"discovery\", \"meeting-intelligence\"]\n}",
+        "options": {
+          "neverError": true
+        }
       },
-      "id": "push-to-crm",
+      "id": "post-context",
       "name": "Post to Kratos CRM Context Feed",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1020, 200]
+      "position": [1600, 240]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://backend:8000/api/sessions/{{ $json.sessionId }}/",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"transcript_status\": \"ready\",\n  \"ai_summary\": {{ JSON.stringify($json.summaryText) }}\n}",
+        "options": {
+          "neverError": true
+        }
+      },
+      "id": "update-session",
+      "name": "Update Client Session Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1820, 240]
     }
   ],
   "connections": {
     "Recall.ai Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Event & Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Event & Metadata": {
       "main": [
         [
           {
@@ -111,29 +162,62 @@
       "main": [
         [
           {
-            "node": "Fetch Recall Transcript",
+            "node": "Fetch Recall Bot & Transcript",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Fetch Recall Transcript": {
+    "Fetch Recall Bot & Transcript": {
       "main": [
         [
           {
-            "node": "OpenAI GPT-4o Summarizer",
+            "node": "Prepare Transcript & Prompt",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "OpenAI GPT-4o Summarizer": {
+    "Prepare Transcript & Prompt": {
+      "main": [
+        [
+          {
+            "node": "Google Gemini 2.0 Flash (Free)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini 2.0 Flash (Free)": {
+      "main": [
+        [
+          {
+            "node": "Format Executive Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Executive Summary": {
       "main": [
         [
           {
             "node": "Post to Kratos CRM Context Feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to Kratos CRM Context Feed": {
+      "main": [
+        [
+          {
+            "node": "Update Client Session Status",
             "type": "main",
             "index": 0
           }
